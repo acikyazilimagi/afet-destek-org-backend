@@ -33,7 +33,19 @@ exports.getDemands = functions.https.onRequest((req, res) => {
         }
         const demandsCollection = db.collection('demands');
         const demands = await demandsCollection.get();
-        const demandsData = demands.docs.map(doc => doc.data());
+        const demandsData = demands.docs.map(doc => {
+            const data = doc.data();
+            delete data.isActive;
+            delete data.createdAt;
+            data.geo = {
+                latitude: data.geo.latitude,
+                longitude: data.geo.longitude
+            }
+            data.modifiedTime = new Date(data.modifiedTime._seconds * 1000).toISOString()
+            return {
+                ...data
+            }
+        });
         res.send({
             demands: demandsData
         });
