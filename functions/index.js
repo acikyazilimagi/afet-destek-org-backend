@@ -33,7 +33,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
         }
 
         let query = db.collection('demands')
-        const pageSize = 2
+        const pageSize = 20
 
         const { geo, radius, categoryIds, page } = req.body;
 
