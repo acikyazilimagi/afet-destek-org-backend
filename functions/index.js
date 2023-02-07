@@ -88,8 +88,6 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                 res.send({
                     demands: slicedMatchingDocs.map(doc => {
                         const data = doc.data();
-                        delete data.isActive;
-                        delete data.createdAt;
                         data.geo = {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
@@ -110,8 +108,6 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                 res.send({
                     demands: snapshot.docs.map(doc => {
                         const data = doc.data();
-                        delete data.isActive;
-                        delete data.createdAt;
                         data.geo = {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
