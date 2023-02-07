@@ -1,8 +1,6 @@
 name: Continuous Deployment
 
-on:
-  push:
-    branches: [ master ]
+on: workflow_dispatch
 
 jobs:
   deploy:
@@ -12,9 +10,10 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '16'
-      - run: npm ci
-      - run: npm run build
-      - uses: w9jds/firebase-actions@master
+      - run: |
+          cd functions
+          npm ci
+      - uses: w9jds/firebase-action@master
         with:
           args: deploy --only functions
         env:
