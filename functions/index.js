@@ -13,9 +13,6 @@ initializeApp();
 
 const db = getFirestore();
 
-
-
-
 const configuration = {
     name: "demands", // a collection with this name will be created
     periodSeconds: 60, // the length of test period in seconds
