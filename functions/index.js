@@ -94,7 +94,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        data.modifiedTime = updatedTime;
+                        data.modifiedTime = data.updatedTime.toDate()
                         delete data.updatedTime;
                         return {
                             ...data
@@ -116,7 +116,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        data.modifiedTime = updatedTime;
+                        data.modifiedTime = data.updatedTime.toDate()
                         delete data.updatedTime;
                         return {
                             ...data
