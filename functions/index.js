@@ -4,10 +4,38 @@ const fetch = require("node-fetch");
 
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { FirebaseFunctionsRateLimiter } = require("firebase-functions-rate-limiter");
 
 initializeApp();
 
 const db = getFirestore();
+
+const configuration = {
+    name: "demands", // a collection with this name will be created
+    periodSeconds: 60, // the length of test period in seconds
+    maxCalls: 20,// number of maximum allowed calls in the period
+    debug: true // boolean (default false)
+};
+
+const limiter = FirebaseFunctionsRateLimiter.withFirestoreBackend(configuration, db)
+
+exports.getDemands = functions.https.onRequest(async (req, res) => {
+    if (req.method !== 'GET') {
+        res.status(405).send('Method Not Allowed');
+        return;
+    }
+    const quotaExceeded = await limiter.isQuotaAlreadyExceeded();
+    if (quotaExceeded) {
+        res.status(429).send('Too Many Requests');
+        return;
+    }
+    const demandsCollection = db.collection('demands');
+    const demands = await demandsCollection.get();
+    const demandsData = demands.docs.map(doc => doc.data());
+    res.send({
+        demands: demandsData
+    });
+});
 
 exports.registerUser = functions.auth.user().onCreate(async (user) => {
     const usersCollection = db.collection('users');
