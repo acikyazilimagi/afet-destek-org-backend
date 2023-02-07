@@ -94,7 +94,8 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        data.modifiedTime = new Date(data.modifiedTime._seconds * 1000).toISOString()
+                        const modifiedTime = data.modifiedTime ? new Date(data.modifiedTime._seconds * 1000).toISOString() : null;
+                        data.modifiedTime = modifiedTime;
                         return {
                             ...data
                         }
@@ -115,7 +116,8 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        data.modifiedTime = new Date(data.modifiedTime._seconds * 1000).toISOString()
+                        const modifiedTime = data.modifiedTime ? new Date(data.modifiedTime._seconds * 1000).toISOString() : null;
+                        data.modifiedTime = modifiedTime;
                         return {
                             ...data
                         }
