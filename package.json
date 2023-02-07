@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "firebase-functions-rate-limiter": "^3.9.1",
     "node-fetch": "^3.3.0"
   }
 }
