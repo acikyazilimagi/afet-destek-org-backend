@@ -1,6 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
+const cors =  require("cors")({ origin: true });
 
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -19,21 +20,23 @@ const configuration = {
 
 const limiter = FirebaseFunctionsRateLimiter.withFirestoreBackend(configuration, db)
 
-exports.getDemands = functions.https.onRequest(async (req, res) => {
-    if (req.method !== 'GET') {
-        res.status(405).send('Method Not Allowed');
-        return;
-    }
-    const quotaExceeded = await limiter.isQuotaAlreadyExceeded();
-    if (quotaExceeded) {
-        res.status(429).send('Too Many Requests');
-        return;
-    }
-    const demandsCollection = db.collection('demands');
-    const demands = await demandsCollection.get();
-    const demandsData = demands.docs.map(doc => doc.data());
-    res.send({
-        demands: demandsData
+exports.getDemands = functions.https.onRequest((req, res) => {
+    cors(req, res, async () => {
+        if (req.method !== 'GET') {
+            res.status(405).send('Method Not Allowed');
+            return;
+        }
+        const quotaExceeded = await limiter.isQuotaAlreadyExceeded();
+        if (quotaExceeded) {
+            res.status(429).send('Too Many Requests');
+            return;
+        }
+        const demandsCollection = db.collection('demands');
+        const demands = await demandsCollection.get();
+        const demandsData = demands.docs.map(doc => doc.data());
+        res.send({
+            demands: demandsData
+        });
     });
 });
 
