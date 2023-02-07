@@ -41,7 +41,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
             res.status(400).send('Bad Request');
         }
 
-        if (categoryIds) {
+        if (categoryIds && categoryIds.length > 0) {
             query = query.where('categoryIds', 'array-contains-any', categoryIds)
         }
 
@@ -87,13 +87,21 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                 const slicedMatchingDocs = matchingDocs.slice((page - 1) * pageSize, page * pageSize);
                 res.send({
                     demands: slicedMatchingDocs.map(doc => {
+                        // TODO: clean up this code, remove repetition
                         const data = doc.data();
+                        const lat = data.geo.latitude;
+                        const lng = data.geo.longitude;
+                        const distanceInKm = geofire.distanceBetween([lat, lng], [geo.latitude, geo.longitude]);
+                        const distanceInM = distanceInKm * 1000;
+
                         data.geo = {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        data.modifiedTime = data.updatedTime.toDate()
+                        data.modifiedTimeUtc = data.updatedTime.toDate()
+                        data.distanceMeter = parseInt(distanceInM);
                         delete data.updatedTime;
+                        data.id = doc.id;
                         return {
                             ...data
                         }
@@ -107,13 +115,15 @@ exports.getDemands = functions.https.onRequest((req, res) => {
             query.get().then((snapshot) => {
                 res.send({
                     demands: snapshot.docs.map(doc => {
+                        // TODO: clean up this code, remove repetition
                         const data = doc.data();
                         data.geo = {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        data.modifiedTime = data.updatedTime.toDate()
+                        data.modifiedTimeUtc = data.updatedTime.toDate()
                         delete data.updatedTime;
+                        data.id = doc.id;
                         return {
                             ...data
                         }
