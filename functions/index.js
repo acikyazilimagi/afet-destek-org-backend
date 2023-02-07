@@ -28,6 +28,20 @@ exports.registerUser = functions.auth.user().onCreate(async (user) => {
     });
 });
 
+exports.onUserUpdate = functions.firestore
+    .document('users/{userId}')
+    .onUpdate(async (change, context) => {
+        const { userId } = context.params;
+        const { isSuspended } = change.after.data();
+
+        const userRecord = await admin.auth().getUser(userId);
+        const { disabled } = userRecord;
+
+        if (isSuspended !== disabled) {
+            await admin.auth().updateUser(userId, { disabled: isSuspended });
+        }
+    });
+
 exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
     .onCreate(async (snap) => {
