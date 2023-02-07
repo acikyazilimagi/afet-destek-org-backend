@@ -94,8 +94,8 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        const modifiedTime = data.modifiedTime ? new Date(data.modifiedTime._seconds * 1000).toISOString() : null;
-                        data.modifiedTime = modifiedTime;
+                        data.modifiedTime = updatedTime;
+                        delete data.updatedTime;
                         return {
                             ...data
                         }
@@ -105,7 +105,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
         }
         else {
             // if we don't need to filter by geo
-            query = query.orderBy('modifiedTime', 'desc').limit(pageSize).offset((page - 1) * pageSize)
+            query = query.orderBy('updatedTime', 'desc').limit(pageSize).offset((page - 1) * pageSize)
             query.get().then((snapshot) => {
                 res.send({
                     demands: snapshot.docs.map(doc => {
@@ -116,8 +116,8 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                             latitude: data.geo.latitude,
                             longitude: data.geo.longitude
                         }
-                        const modifiedTime = data.modifiedTime ? new Date(data.modifiedTime._seconds * 1000).toISOString() : null;
-                        data.modifiedTime = modifiedTime;
+                        data.modifiedTime = updatedTime;
+                        delete data.updatedTime;
                         return {
                             ...data
                         }
