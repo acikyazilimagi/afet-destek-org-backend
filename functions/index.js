@@ -7,6 +7,8 @@ const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { FirebaseFunctionsRateLimiter } = require("firebase-functions-rate-limiter");
 
+const dataBackup = require('./dataBackup');
+
 initializeApp();
 
 const db = getFirestore();
@@ -19,6 +21,8 @@ const configuration = {
 };
 
 const limiter = FirebaseFunctionsRateLimiter.withFirestoreBackend(configuration, db)
+
+exports.scheduledFirestoreExport = dataBackup.scheduledFirestoreExport;
 
 exports.getDemands = functions.https.onRequest((req, res) => {
     cors(req, res, async () => {
