@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
-const cors =  require("cors")({ origin: true });
+const cors = require("cors")({ origin: true });
 
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -22,7 +22,7 @@ const limiter = FirebaseFunctionsRateLimiter.withFirestoreBackend(configuration,
 
 exports.getDemands = functions.https.onRequest((req, res) => {
     cors(req, res, async () => {
-        if (req.method !== 'GET') {
+        if (req.method !== 'POST') {
             res.status(405).send('Method Not Allowed');
             return;
         }
