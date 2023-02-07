@@ -57,7 +57,6 @@ exports.registerUser = functions.auth.user().onCreate(async (user) => {
     });
 });
 
-
 exports.onUserUpdate = functions.firestore
     .document('users/{userId}')
     .onUpdate(async (change, context) => {
@@ -71,7 +70,6 @@ exports.onUserUpdate = functions.firestore
             await admin.auth().updateUser(userId, { disabled: isSuspended });
         }
     });
-
 
 exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
