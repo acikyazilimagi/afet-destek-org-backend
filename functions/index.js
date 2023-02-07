@@ -1,15 +1,8 @@
 const functions = require("firebase-functions");
-import fetch, {
-    Blob,
-    blobFrom,
-    blobFromSync,
-    File,
-    fileFrom,
-    fileFromSync,
-} from 'node-fetch'
+const fetch = require("node-fetch");
 
-const { initializeApp, applicationDefault, cert } = require('firebase-admin/app');
-const { getFirestore, Timestamp, FieldValue } = require('firebase-admin/firestore');
+const { initializeApp } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 
@@ -28,7 +21,7 @@ exports.registerUser = functions.auth.user().onCreate(async (user) => {
     return usersCollection.doc(user.uid).set({
         uid,
         phoneNumber,
-        isSuppended: false,
+        isSuspended: false,
         deletedAt: null,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp()
@@ -37,7 +30,8 @@ exports.registerUser = functions.auth.user().onCreate(async (user) => {
 
 exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
-    .onCreate(async (snap, context) => {
+    .onCreate(async (snap) => {
+        const url = 'https://httpbin.org/post'
         const demand = snap.data();
         const response = await fetch(url, { method: 'POST', body: demand })
         const data = await response.json()
