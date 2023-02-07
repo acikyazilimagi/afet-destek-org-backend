@@ -1,7 +1,7 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const axios = require("axios");
 const cors = require("cors")({ origin: true });
+const geofire = require("geofire-common");
 
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -31,24 +31,100 @@ exports.getDemands = functions.https.onRequest((req, res) => {
             res.status(429).send('Too Many Requests');
             return;
         }
-        const demandsCollection = db.collection('demands');
-        const demands = await demandsCollection.get();
-        const demandsData = demands.docs.map(doc => {
-            const data = doc.data();
-            delete data.isActive;
-            delete data.createdAt;
-            data.geo = {
-                latitude: data.geo.latitude,
-                longitude: data.geo.longitude
+
+        let query = db.collection('demands')
+        const pageSize = 20
+
+        const { geo, radius, categoryIds, page } = req.body;
+
+        if (!page) {
+            res.status(400).send('Bad Request');
+        }
+
+        if (categoryIds) {
+            query = query.where('categoryIds', 'array-contains-any', categoryIds)
+        }
+
+        if (geo && radius) {
+            const center = [Number.parseFloat(geo.latitude), Number.parseFloat(geo.longitude)]
+
+            const radiusInM = Number.parseFloat(radius) * 1000;
+
+            const bounds = geofire.geohashQueryBounds(center, radiusInM);
+
+
+            // https://firebase.google.com/docs/firestore/solutions/geoqueries
+            const promises = [];
+            for (const b of bounds) {
+                const q = query
+                    .orderBy('geoHash')
+                    .startAt(b[0])
+                    .endAt(b[1]);
+
+                promises.push(q.get());
             }
-            data.modifiedTime = new Date(data.modifiedTime._seconds * 1000).toISOString()
-            return {
-                ...data
-            }
-        });
-        res.send({
-            demands: demandsData
-        });
+            Promise.all(promises).then((snapshots) => {
+                const matchingDocs = [];
+
+
+                for (const snap of snapshots) {
+                    for (const doc of snap.docs) {
+                        const lat = doc.data().geo.latitude;
+                        const lng = doc.data().geo.longitude;
+
+                        // We have to filter out a few false positives due to GeoHash
+                        // accuracy, but most will match
+                        const distanceInKm = geofire.distanceBetween([lat, lng], [geo.latitude, geo.longitude]);
+                        const distanceInM = distanceInKm * 1000;
+                        if (distanceInM <= radiusInM) {
+                            matchingDocs.push(doc);
+                        }
+                    }
+                }
+
+                return matchingDocs;
+            }).then((matchingDocs) => {
+                const slicedMatchingDocs = matchingDocs.slice((page - 1) * pageSize, page * pageSize);
+                res.send({
+                    demands: slicedMatchingDocs.map(doc => {
+                        const data = doc.data();
+                        delete data.isActive;
+                        delete data.createdAt;
+                        data.geo = {
+                            latitude: data.geo.latitude,
+                            longitude: data.geo.longitude
+                        }
+                        data.modifiedTime = data.updatedTime.toDate()
+                        delete data.updatedTime;
+                        return {
+                            ...data
+                        }
+                    })
+                })
+            });
+        }
+        else {
+            // if we don't need to filter by geo
+            query = query.orderBy('updatedTime', 'desc').limit(pageSize).offset((page - 1) * pageSize)
+            query.get().then((snapshot) => {
+                res.send({
+                    demands: snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        delete data.isActive;
+                        delete data.createdAt;
+                        data.geo = {
+                            latitude: data.geo.latitude,
+                            longitude: data.geo.longitude
+                        }
+                        data.modifiedTime = data.updatedTime.toDate()
+                        delete data.updatedTime;
+                        return {
+                            ...data
+                        }
+                    })
+                })
+            })
+        }
     });
 });
 
@@ -62,8 +138,9 @@ exports.registerUser = functions.auth.user().onCreate(async (user) => {
 
     const { uid, phoneNumber } = user;
 
+
     return usersCollection.doc(user.uid).set({
-        uid,
+        id: uid,
         phoneNumber,
         isSuspended: false,
         deletedAt: null,
@@ -89,9 +166,12 @@ exports.onUserUpdate = functions.firestore
 exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
     .onCreate(async (snap) => {
-        const url = 'https://httpbin.org/post'
         const demand = snap.data();
-        const response = await axios.post(url, demand);
-        const data = await response.data;
-        console.log(data);
+        const { geo } = demand;
+        const hash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
+        snap.ref.set({
+            geoHash: hash
+        }, { merge: true });
+
     });
+

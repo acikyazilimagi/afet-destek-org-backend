@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "firebase-functions-rate-limiter": "^3.9.1",
+    "geofire-common": "^6.0.0",
     "node-fetch": "^3.3.0"
   }
 }
