@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const fetch = require("node-fetch");
+const axios = require("axios");
 
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -76,7 +76,7 @@ exports.onDemandCreate = functions.firestore
     .onCreate(async (snap) => {
         const url = 'https://httpbin.org/post'
         const demand = snap.data();
-        const response = await fetch(url, { method: 'POST', body: demand })
-        const data = await response.json()
+        const response = await axios.post(url, demand);
+        const data = await response.data;
         console.log(data);
     });
