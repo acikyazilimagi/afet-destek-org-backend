@@ -102,26 +102,27 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                 })
             });
         }
-
-        // if we don't need to filter by geo
-        query = query.orderBy('modifiedTime', 'desc').limit(pageSize).offset((page - 1) * pageSize)
-        query.get().then((snapshot) => {
-            res.send({
-                demands: snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    delete data.isActive;
-                    delete data.createdAt;
-                    data.geo = {
-                        latitude: data.geo.latitude,
-                        longitude: data.geo.longitude
-                    }
-                    data.modifiedTime = new Date(data.modifiedTime._seconds * 1000).toISOString()
-                    return {
-                        ...data
-                    }
+        else {
+            // if we don't need to filter by geo
+            query = query.orderBy('modifiedTime', 'desc').limit(pageSize).offset((page - 1) * pageSize)
+            query.get().then((snapshot) => {
+                res.send({
+                    demands: snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        delete data.isActive;
+                        delete data.createdAt;
+                        data.geo = {
+                            latitude: data.geo.latitude,
+                            longitude: data.geo.longitude
+                        }
+                        data.modifiedTime = new Date(data.modifiedTime._seconds * 1000).toISOString()
+                        return {
+                            ...data
+                        }
+                    })
                 })
             })
-        })
+        }
     });
 });
 
