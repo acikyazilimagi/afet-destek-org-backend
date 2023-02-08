@@ -54,13 +54,10 @@ exports.getDemands = functions.https.onRequest((req, res) => {
             query = query.where('categoryIds', 'array-contains-any', categoryIds)
         }
 
-        if (radius) {
+        function handleRequestWithRadius() {
             const center = [Number.parseFloat(geo.latitude), Number.parseFloat(geo.longitude)]
-
             const radiusInM = Number.parseFloat(radius) * 1000;
-
             const bounds = geofire.geohashQueryBounds(center, radiusInM);
-
 
             // https://firebase.google.com/docs/firestore/solutions/geoqueries
             const promises = [];
@@ -72,12 +69,11 @@ exports.getDemands = functions.https.onRequest((req, res) => {
 
                 promises.push(q.get());
             }
+
             Promise.all(promises).then((snapshots) => {
-                const matchingDocs = [];
-
-
-                for (const snap of snapshots) {
-                    for (const doc of snap.docs) {
+                return snapshots.map(snapshot => snapshot.docs)
+                    .flat()
+                    .filter(doc => {
                         const lat = doc.data().geo.latitude;
                         const lng = doc.data().geo.longitude;
 
@@ -85,66 +81,56 @@ exports.getDemands = functions.https.onRequest((req, res) => {
                         // accuracy, but most will match
                         const distanceInKm = geofire.distanceBetween([lat, lng], [geo.latitude, geo.longitude]);
                         const distanceInM = distanceInKm * 1000;
-                        if (distanceInM <= radiusInM) {
-                            matchingDocs.push(doc);
-                        }
-                    }
-                }
-
-                return matchingDocs;
+                        return distanceInM <= radiusInM;
+                    })
             }).then((matchingDocs) => {
                 const slicedMatchingDocs = matchingDocs.slice((page - 1) * pageSize, page * pageSize);
                 res.send({
-                    demands: slicedMatchingDocs.map(doc => {
-                        // TODO: clean up this code, remove repetition
-                        const data = doc.data();
-                        const lat = data.geo.latitude;
-                        const lng = data.geo.longitude;
-                        const distanceInKm = geofire.distanceBetween([lat, lng], [geo.latitude, geo.longitude]);
-                        const distanceInM = distanceInKm * 1000;
-
-                        data.geo = {
-                            latitude: data.geo.latitude,
-                            longitude: data.geo.longitude
-                        }
-                        data.modifiedTimeUtc = data.updatedTime.toDate()
-                        data.distanceMeter = parseInt(distanceInM);
-                        data.id = doc.id;
-                        delete data.updatedTime;
-                        return {
-                            ...data
-                        }
-                    })
+                    demands: slicedMatchingDocs.map(doc => compileDemandDocument(doc))
                 })
             });
         }
-        else {
-            // if we don't need to filter by geo
-            query = query.orderBy('updatedTime', 'desc').limit(pageSize).offset((page - 1) * pageSize)
+
+        function handleRequestWithoutRadius() {
+            query = query.orderBy('updatedTime', 'desc')
+                .limit(pageSize)
+                .offset((page - 1) * pageSize)
+
             query.get().then((snapshot) => {
                 res.send({
-                    demands: snapshot.docs.map(doc => {
-                        // TODO: clean up this code, remove repetition
-                        const data = doc.data();
-                        const lat = data.geo.latitude;
-                        const lng = data.geo.longitude;
-                        const distanceInKm = geofire.distanceBetween([lat, lng], [geo.latitude, geo.longitude]);
-                        const distanceInM = distanceInKm * 1000;
-                        data.geo = {
-                            latitude: data.geo.latitude,
-                            longitude: data.geo.longitude
-                        }
-                        data.modifiedTimeUtc = data.updatedTime.toDate()
-                        data.distanceMeter = parseInt(distanceInM);
-                        data.id = doc.id;
-                        delete data.updatedTime;
-                        return {
-                            ...data
-                        }
-                    })
+                    demands: snapshot.docs.map(doc => compileDemandDocument(doc))
                 })
             })
         }
+
+        function compileDemandDocument(doc) {
+            const data = doc.data();
+            const lat = data.geo.latitude;
+            const lng = data.geo.longitude;
+            const distanceInKm = geofire.distanceBetween([lat, lng], [geo.latitude, geo.longitude]);
+            const distanceInM = distanceInKm * 1000;
+
+            data.geo = {
+                latitude: lat,
+                longitude: lng
+            };
+            data.modifiedTimeUtc = data.updatedTime.toDate();
+            data.distanceMeter = parseInt(distanceInM);
+            data.id = doc.id;
+
+            delete data.updatedTime;
+
+            return {
+                ...data
+            };
+        }
+
+        if (radius) {
+            handleRequestWithRadius();
+            return;
+        }
+
+        handleRequestWithoutRadius();
     });
 });
 
@@ -194,4 +180,3 @@ exports.onDemandCreate = functions.firestore
         }, { merge: true });
 
     });
-
