@@ -2,8 +2,7 @@ name: Continuous Deployment Dev
 
 on: push
   branches:
-      - 'releases'
-
+      - 'test'
 
 jobs:
   deploy:
