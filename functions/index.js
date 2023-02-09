@@ -38,7 +38,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
             return;
         }
 
-        let query = db.collection('demands')
+        let query = db.collection('demands').where('isActive', '==', true)
         const pageSize = 20
 
         const { geo, radius, categoryIds, page } = req.body;
