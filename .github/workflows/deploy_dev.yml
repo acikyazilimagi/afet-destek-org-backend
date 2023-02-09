@@ -1,6 +1,9 @@
 name: Continuous Deployment Dev
 
-on: workflow_dispatch
+on: push
+  branches:
+      - 'releases'
+
 
 jobs:
   deploy:
