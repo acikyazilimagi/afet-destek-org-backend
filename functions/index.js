@@ -186,7 +186,7 @@ exports.onDemandCreate = functions.firestore
     });
 
 // runs on `demands` collection create or update
-exports.onDemandModify = functions.firestore
+exports.onDemandCreateOrUpdate = functions.firestore
     .document('demands/{docId}')
     .onWrite(async (change, context) => {
         const demand = change.after.data();
