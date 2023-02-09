@@ -8,6 +8,8 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { FirebaseFunctionsRateLimiter } = require("firebase-functions-rate-limiter");
 
 const dataBackup = require('./dataBackup');
+const karaListe = require('./data/karaListe');
+
 
 initializeApp();
 
@@ -173,10 +175,19 @@ exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
     .onCreate(async (snap) => {
         const demand = snap.data();
-        const { geo } = demand;
+        const { geo, notes } = demand;
         const hash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
         snap.ref.set({
             geoHash: hash
         }, { merge: true });
-
+        if (notes) {
+            let splittedNote = notes.split(' ');
+            for (const word of splittedNote) {
+                if (karaListe.includes(word)) {
+                    snap.ref.set({
+                        notes: FieldValue.delete()
+                    }, { merge: true });
+                }
+            }
+        }
     });
