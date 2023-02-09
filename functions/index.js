@@ -8,6 +8,8 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { FirebaseFunctionsRateLimiter } = require("firebase-functions-rate-limiter");
 
 const dataBackup = require('./dataBackup');
+const karaListe = require('./data/karaListe');
+
 
 initializeApp();
 
@@ -134,6 +136,7 @@ exports.getDemands = functions.https.onRequest((req, res) => {
     });
 });
 
+// runs on auth user creation
 exports.registerUser = functions.auth.user().onCreate(async (user) => {
     const usersCollection = db.collection('users');
 
@@ -155,6 +158,7 @@ exports.registerUser = functions.auth.user().onCreate(async (user) => {
     });
 });
 
+// runs on `users` collection update
 exports.onUserUpdate = functions.firestore
     .document('users/{userId}')
     .onUpdate(async (change, context) => {
@@ -169,14 +173,32 @@ exports.onUserUpdate = functions.firestore
         }
     });
 
+// runs on `demands` collection create
 exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
     .onCreate(async (snap) => {
         const demand = snap.data();
         const { geo } = demand;
         const hash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
-        snap.ref.set({
+        return snap.ref.set({
             geoHash: hash
         }, { merge: true });
-
     });
+
+// runs on `demands` collection create or update
+exports.onDemandCreateOrUpdate = functions.firestore
+    .document('demands/{docId}')
+    .onWrite(async (change, context) => {
+        const demand = change.after.data();
+        if (demand.notes) {
+            let splittedNote = demand.notes.split(' ');
+            for (const word of splittedNote) {
+                if (karaListe.includes(word)) {
+                    return change.after.ref.set({
+                        notes: FieldValue.delete()
+                    }, { merge: true });
+                }
+            }
+        }
+    }
+    );
