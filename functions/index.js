@@ -178,7 +178,7 @@ exports.onDemandCreate = functions.firestore
     .document('demands/{docId}')
     .onCreate(async (snap) => {
         const demand = snap.data();
-        const { geo, notes } = demand;
+        const { geo } = demand;
         const hash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
         return snap.ref.set({
             geoHash: hash
