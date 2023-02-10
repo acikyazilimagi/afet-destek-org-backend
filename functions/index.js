@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const cors = require("cors")({ origin: getOriginForCors() });
+const cors = require("cors")({ origin: true });
 const geofire = require("geofire-common");
 
 const { initializeApp } = require('firebase-admin/app');
@@ -9,15 +9,6 @@ const { FirebaseFunctionsRateLimiter } = require("firebase-functions-rate-limite
 
 const dataBackup = require('./dataBackup');
 const karaListe = require('./data/karaListe');
-
-
-function getOriginForCors() {
-    if (process.env.GCLOUD_PROJECT === 'env-deprem-destek-org')
-        return true
-    if (process.env.FUNCTIONS_EMULATOR === 'true')
-        return true
-    return 'https://deprem-destek.org'
-}
 
 
 initializeApp();
