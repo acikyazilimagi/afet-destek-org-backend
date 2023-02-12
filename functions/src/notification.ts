@@ -1,6 +1,5 @@
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
-import { MessagingDevicesResponse } from "firebase-admin/lib/messaging/messaging-api";
 import { Geopoint, geohashQueryBounds, distanceBetween } from "geofire-common";
 import { NotificationType } from "./types/notification";
 
