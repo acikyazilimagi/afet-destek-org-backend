@@ -3,7 +3,10 @@ import cors = require("cors");
 import * as geofire from "geofire-common";
 import FirebaseFunctionsRateLimiter from "firebase-functions-rate-limiter";
 import scheduledFirestoreExportFunction from "./dataBackup";
-import { notifyVolunteers } from "./notification";
+import {
+  notifyVolunteers,
+  notifyVolunteersWhereRadiusIsNull,
+} from "./notification";
 
 import karaListe from "./data/karaListe";
 import * as admin from "firebase-admin";
@@ -195,6 +198,7 @@ export const onDemandCreate = functions.firestore
     const { geo, categoryIds } = demand;
     const geoHash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
     return Promise.all([
+      notifyVolunteersWhereRadiusIsNull(snap.id),
       notifyVolunteers({ geo, categoryIds, demandId: snap.id }),
       snap.ref.set(
         {
