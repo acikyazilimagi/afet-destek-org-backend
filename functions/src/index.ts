@@ -127,7 +127,7 @@ export const getDemands = functions.https.onRequest((req, res) => {
         [lat, lng],
         [geo.latitude, geo.longitude]
       );
-      const distanceInM = parseInt(distanceInKm * 1000, 10);
+      const distanceInM = Math.round(distanceInKm * 1000);
 
       data.geo = {
         latitude: lat,
