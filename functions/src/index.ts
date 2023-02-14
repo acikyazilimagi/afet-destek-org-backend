@@ -197,16 +197,18 @@ export const onDemandCreate = functions.firestore
     const demand = snap.data();
     const { geo, categoryIds } = demand;
     const geoHash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
-    return Promise.all([
-      notifyVolunteersWhereRadiusIsNull(snap.id),
-      notifyVolunteers({ geo, categoryIds, demandId: snap.id }),
-      snap.ref.set(
-        {
-          geoHash,
-        },
-        { merge: true }
-      ),
-    ]);
+    await notifyVolunteersWhereRadiusIsNull({
+      demandId: snap.id,
+      categoryIds,
+      db,
+    });
+    await notifyVolunteers({ geo, categoryIds, demandId: snap.id, db });
+    await snap.ref.set(
+      {
+        geoHash,
+      },
+      { merge: true }
+    );
   });
 
 // runs on `notifications` collection create

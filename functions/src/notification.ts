@@ -1,5 +1,4 @@
 import * as admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
 import { Message } from "firebase-admin/lib/messaging/messaging-api";
 import { Geopoint, geohashQueryBounds, distanceBetween } from "geofire-common";
 import { NotificationType } from "./types/notification";
@@ -11,6 +10,7 @@ type sendNotificationsParams = {
   };
   demandId: string;
   categoryIds?: string[];
+  db: FirebaseFirestore.Firestore;
 };
 
 type matchingNotifications = {
@@ -23,6 +23,12 @@ type matchingNotifications = {
 type generateFCMMessageParams = {
   fcmToken: string;
   demandId: string;
+};
+
+type notifyVolunteersWhereRadiusIsNullParams = {
+  categoryIds: string[];
+  demandId: string;
+  db: FirebaseFirestore.Firestore;
 };
 
 const generateFCMMessage = (params: generateFCMMessageParams): Message => {
@@ -41,28 +47,53 @@ const generateFCMMessage = (params: generateFCMMessageParams): Message => {
   };
 };
 
-export const notifyVolunteersWhereRadiusIsNull = async (demandId: string) => {
-  const db = getFirestore();
-  const querySnapshot = await db
-    .collection("notifications")
-    .where("radius", "==", null)
-    .get();
+export const notifyVolunteersWhereRadiusIsNull = async (
+  params: notifyVolunteersWhereRadiusIsNullParams
+) => {
+  const { demandId, db } = params;
+  const query: admin.firestore.CollectionReference | admin.firestore.Query =
+    db.collection("notifications");
+
+  const querySnapshot = await query.where("radiusKm", "==", -1).get();
+  console.log(querySnapshot.size);
   querySnapshot.forEach(async (doc) => {
-    const { fcmToken } = doc.data() as NotificationType;
-    try {
-      const fcmMessage = generateFCMMessage({
-        fcmToken,
-        demandId,
-      });
-      await admin.messaging().send(fcmMessage);
-    } catch (e) {
-      db.collection("notifications").doc(doc.id).delete();
+    const { fcmToken, categoryIds } = doc.data() as NotificationType;
+    if (categoryIds && categoryIds.length > 0) {
+      if (
+        categoryIds.some((categoryId) =>
+          params.categoryIds.includes(categoryId)
+        )
+      ) {
+        try {
+          const fcmMessage = generateFCMMessage({
+            fcmToken,
+            demandId,
+          });
+          await admin.messaging().send(fcmMessage);
+          console.log("called for doc.id");
+        } catch (e) {
+          console.log(e);
+          await db.collection("notifications").doc(doc.id).delete();
+        }
+      }
+    } else {
+      try {
+        const fcmMessage = generateFCMMessage({
+          fcmToken,
+          demandId,
+        });
+        await admin.messaging().send(fcmMessage);
+        console.log("called for doc.id");
+      } catch (e) {
+        console.log(e);
+        await db.collection("notifications").doc(doc.id).delete();
+      }
     }
   });
 };
 
 export const notifyVolunteers = async (params: sendNotificationsParams) => {
-  const { geo, categoryIds, demandId } = params;
+  const { geo, categoryIds, demandId, db } = params;
   const geoPoint: Geopoint = [geo.latitude, geo.longitude];
   const radiusInM = 100 * 1000;
   let query: admin.firestore.CollectionReference | admin.firestore.Query = admin
@@ -103,7 +134,6 @@ export const notifyVolunteers = async (params: sendNotificationsParams) => {
       }
     }
   }
-  const db = getFirestore();
   Object.keys(matchingNotifications).forEach(async (docID) => {
     try {
       const fcmMessage = generateFCMMessage({
@@ -112,7 +142,7 @@ export const notifyVolunteers = async (params: sendNotificationsParams) => {
       });
       await admin.messaging().send(fcmMessage);
     } catch (e) {
-      db.collection("notifications").doc(docID).delete();
+      await db.collection("notifications").doc(docID).delete();
     }
   });
 };
