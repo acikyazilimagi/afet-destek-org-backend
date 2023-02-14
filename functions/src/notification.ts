@@ -21,14 +21,14 @@ type matchingNotifications = {
 };
 
 type generateFCMMessageParams = {
-  token: string;
+  fcmToken: string;
   demandId: string;
 };
 
 const generateFCMMessage = (params: generateFCMMessageParams): Message => {
-  const { token, demandId } = params;
+  const { fcmToken, demandId } = params;
   return {
-    token,
+    token: fcmToken,
     notification: {
       title: "Yeni bir talep var!",
       body: "Talebi görüntülemek için tıklayın.",
@@ -48,10 +48,10 @@ export const notifyVolunteersWhereRadiusIsNull = async (demandId: string) => {
     .where("radius", "==", null)
     .get();
   querySnapshot.forEach(async (doc) => {
-    const { token } = doc.data() as NotificationType;
+    const { fcmToken } = doc.data() as NotificationType;
     try {
       const fcmMessage = generateFCMMessage({
-        token,
+        fcmToken,
         demandId,
       });
       await admin.messaging().send(fcmMessage);
@@ -98,7 +98,7 @@ export const notifyVolunteers = async (params: sendNotificationsParams) => {
       if (distanceInM <= radiusInM) {
         matchingNotifications[doc.id] = {
           locale: notification.locale,
-          token: notification.token,
+          token: notification.fcmToken,
         };
       }
     }
@@ -107,7 +107,7 @@ export const notifyVolunteers = async (params: sendNotificationsParams) => {
   Object.keys(matchingNotifications).forEach(async (docID) => {
     try {
       const fcmMessage = generateFCMMessage({
-        token: matchingNotifications[docID].token,
+        fcmToken: matchingNotifications[docID].token,
         demandId,
       });
       await admin.messaging().send(fcmMessage);
