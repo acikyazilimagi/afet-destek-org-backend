@@ -11,6 +11,7 @@ import {
 import karaListe from "./data/karaListe";
 import * as admin from "firebase-admin";
 import { DemandType } from "./types/demand";
+import { NotificationType } from "./types/notification";
 
 const firebase = admin.initializeApp();
 const db = firebase.firestore();
@@ -215,8 +216,17 @@ export const onDemandCreate = functions.firestore
 export const onNotificationCreate = functions.firestore
   .document("notifications/{docId}")
   .onCreate(async (snap) => {
-    const notification = snap.data();
-    const { geo } = notification;
+    const notification: NotificationType = snap.data() as NotificationType;
+    const { geo, fcmToken } = notification;
+    const duplicate = await db
+      .collection("notifications")
+      .where("fcmToken", "==", fcmToken)
+      .orderBy("createdTime", "asc")
+      .get();
+    if (duplicate.docs.length > 1) {
+      const doc = duplicate.docs[0];
+      await db.collection("notifications").doc(doc.id).delete();
+    }
     const hash = geofire.geohashForLocation([geo.latitude, geo.longitude]);
     return snap.ref.set(
       {

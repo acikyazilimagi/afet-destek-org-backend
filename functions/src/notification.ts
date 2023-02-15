@@ -36,16 +36,19 @@ const generateFCMMessage = (params: generateFCMMessageParams): Message => {
   return {
     token: fcmToken,
     notification: {
-      title: "Yeni bir talep var!",
-      body: "Talebi görüntülemek için tıklayın.",
+      title: "Yeni bir yardim talebi var!",
+      body: "Yakınınızda yeni bir yardım talebi oluşturuldu.",
     },
     webpush: {
       fcmOptions: {
-        link: `https://test-deprem-destek-org.web.app/demand/${demandId}`,
+        link: `https://afetdestek.org/demand/${demandId}`,
       },
     },
   };
 };
+
+// TODO: to notify users we may iterate over all notification
+// because we can't properly query with different conditions
 
 export const notifyVolunteersWhereRadiusIsNull = async (
   params: notifyVolunteersWhereRadiusIsNullParams
