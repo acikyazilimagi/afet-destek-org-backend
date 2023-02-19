@@ -1,3 +1,7 @@
+# Duyuru
+
+Bu proje durdurulmuştur. Herkesin emeğine sağlık.
+
 # Yardım Ağı Projesi
 
 Bu uygulama, ihtiyaç sahibi depremzedelerin hangi adreste, nelere ihtiyaçları olduğu ve iletişim alma yöntemi bilgilerini ekleyebildiği; aynı zamanda girilen ihtiyaç taleplerinin listelenerek yardımseverlerin bu ihtiyaçları karşılayabilmesi amacıyla tasarlandı.
